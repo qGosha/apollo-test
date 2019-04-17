@@ -23,6 +23,14 @@ const VOTE_MUTATION = gql`
   }
 `
 
+const DELETE_LINK_MUTATION = gql`
+  mutation DeleteLinkMutation($id: ID!) {
+    deleteLink(id: $id) {
+      id
+    }
+  }
+`
+
 class Link extends Component {
   render() {
   const authToken = localStorage.getItem(AUTH_TOKEN)
@@ -40,6 +48,20 @@ class Link extends Component {
             {voteMutation => (
               <div className="ml1 gray f11" onClick={voteMutation}>
                 ▲
+              </div>
+            )}
+          </Mutation>
+        )}
+        {authToken && (
+          <Mutation
+            mutation={DELETE_LINK_MUTATION}
+            variables={{ id: this.props.link.id }}
+            update={(store, { data: { link } }) =>
+            this.props._updateCacheAfterLinkDelete(store, this.props.link.id)}
+            >
+            {deleteLinkMutation => (
+              <div className="ml1 gray f11" onClick={deleteLinkMutation}>
+               ♻
               </div>
             )}
           </Mutation>

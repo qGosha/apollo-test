@@ -3,9 +3,10 @@ import Link from './Link'
 import { Query } from 'react-apollo'
 import gql from 'graphql-tag'
 
-const FEED_QUERY = gql`
-  {
-    feed {
+export const FEED_QUERY = gql`
+  query FeedQuery($first: Int, $skip: Int, $orderBy: LinkOrderByInput){
+    feed(first: $first, skip: $skip, orderBy: $orderBy) {
+      links {
         id
         url
         description
@@ -21,29 +22,30 @@ const FEED_QUERY = gql`
         }
       }
     }
+   }
   }
 `
 
 class LinkList extends Component {
-  render() {
-    return (
-      <Query query={FEED_QUERY}>
-    {({ loading, error, data }) => {
-      if (loading) return <div>Fetching</div>
-      if (error) return <div>Error</div>
 
-      const linksToRender = data.feed
+  _getQueryVariables = () => {
+  const isNewPage = this.props.location.pathname.includes('new')
+  const page = parseInt(this.props.match.params.page, 10)
 
-      return (
-        <div>
-          {linksToRender.map((link, index) => <Link key={link.id} link={link} index={index} />)}
-        </div>
-      )
-    }}
-  </Query>
-  )
-  }
-  
+  const skip = isNewPage ? (page - 1) * LINKS_PER_PAGE : 0
+  const first = isNewPage ? LINKS_PER_PAGE : 100
+  const orderBy = isNewPage ? 'createdAt_DESC' : null
+  return { first, skip, orderBy }
+}
+
+  _updateCacheAfterLinkDelete = (store, linkId) => {
+  const data = store.readQuery({ query: FEED_QUERY })
+
+  const linksAfterDeleting = data.feed.links.filter(link => link.id !== linkId)
+  data.feed.links = linksAfterDeleting;
+  store.writeQuery({ query: FEED_QUERY, data })
+}
+
   _updateCacheAfterVote = (store, createVote, linkId) => {
   const data = store.readQuery({ query: FEED_QUERY })
 
@@ -53,6 +55,33 @@ class LinkList extends Component {
   store.writeQuery({ query: FEED_QUERY, data })
 }
 
+  render() {
+    return (
+      <Query query={FEED_QUERY} variables={this._getQueryVariables()}>
+    {({ loading, error, data }) => {
+      if (loading) return <div>Fetching</div>
+      if (error) return <div>Error</div>
+
+      const linksToRender = data.feed.links
+
+      return (
+        <div>
+          {linksToRender.map((link, index) =>
+            <Link
+              key={link.id}
+              link={link}
+              index={index}
+              updateStoreAfterVote={this._updateCacheAfterVote}
+              _updateCacheAfterLinkDelete={this._updateCacheAfterLinkDelete}
+              />)}
+        </div>
+      )
+    }}
+  </Query>
+  )
+  }
+
 }
+
 
 export default LinkList
