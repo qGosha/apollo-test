@@ -13,7 +13,7 @@ import { InMemoryCache } from 'apollo-cache-inmemory'
 import { AUTH_TOKEN } from './constants'
 
 const httpLink = createHttpLink({
-  uri: 'http://localhost:4000'
+  uri: 'https://graphql-server-test1.herokuapp.com/'
 })
 
 const authLink = setContext((_, { headers }) => {
